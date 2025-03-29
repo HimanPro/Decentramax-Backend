@@ -31,8 +31,8 @@ const LevelIncomeSchema = new Schema({
   timestamp: { type: Number, required: true },
 });
 
-UserIncomeSchema.index(
-  { sender: 1, receiver: 1, amount: 1, level : 1, txHash: 1 },
+LevelIncomeSchema.index(
+  { sender: 1, receiver: 1, reward: 1, level : 1, txHash: 1 },
   { unique: true }
 );
 

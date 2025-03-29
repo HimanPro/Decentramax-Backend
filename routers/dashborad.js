@@ -9,8 +9,10 @@ const { verifyToken } = require("../Middleware/jwtToken");
 const { compareSync } = require("bcrypt");
 const SlotPurchased = require("../model/slotPurchased");
 const UserIncome = require("../model/userIncome");
+const newuserplace = require("../model/newuserplace");
+const LevelIncome = require("../model/LevelIncome");
 
-// router.get("/dashborad", async (req, res) => {
+// router.get("/dashboard", async (req, res) => {
 //   try {
 //     const startOfToday = moment.tz("Asia/Kolkata").startOf("day").toDate();
 //     const endOfToday = moment.tz("Asia/Kolkata").endOf("day").toDate();
@@ -133,31 +135,137 @@ const UserIncome = require("../model/userIncome");
 //   }
 // });
 
-router.get("/dashboard/:walletAddress", async (req, res) => {
-  let userAddress = req.params.walletAddress;
+router.get("/dashboard", async (req, res) => {
+  const { address } = req.query;
+
   try {
+    // Find the user
+    const user = await registration.findOne({ user: address });
 
-    const user = await registration.findOne({ user: userAddress });
     if (!user) {
-      return res.json({ msg: 'User not found', success: false });
+      return res.status(404).json({ msg: 'User not found', success: false });
     }
 
-    let checkSlot = await SlotPurchased.find({ user: userAddress }).sort({ slotId: -1 });
+    // Fetch income records from both collections
+    const userIncomeRecords = await UserIncome.find({ receiver: address });
+    const levelIncomeRecords = await LevelIncome.find({ receiver: address });
+    console.log(levelIncomeRecords ,"222")
 
-    if (checkSlot.length > 0) {
+    // Calculate totals
+    const totalUserIncome = userIncomeRecords.reduce((sum, record) => sum + record.amount, 0);
+    const totalLevelIncome = levelIncomeRecords.reduce((sum, record) => sum + record.reward, 0);
 
-      var slot = checkSlot.map(slot => slot.slotId);
-    }
+    // Create enhanced user object
+    const userWithIncome = {
+      ...user.toObject(), // Convert mongoose document to plain object
+      userIncome: totalUserIncome,
+      levelIncome: totalLevelIncome,
+    };
 
-    user.slotPurchased = slot
-    await user.save()
+    res.status(200).json({ 
+      msg: 'Data fetch successful', 
+      success: true, 
+      user: userWithIncome 
+    });
 
-    res.json({ msg: 'Login Successful', success: true, user });
   } catch (error) {
-
-    res.json({ msg: 'Error in login', success: false, error: error.message });
+    res.status(500).json({ 
+      msg: 'Error in data fetching', 
+      success: false, 
+      error: error.message 
+    });
   }
 });
+
+
+
+router.get ("/Matrix" , async (req , res)=> {
+  const { address } = req.query;
+  try {
+    const user = await newuserplace.find({ referrer: address });
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found', success: false });
+    }
+
+    const mergedData = await Promise.all(user.map(async (record) => {
+      const userDetails = await registration.findOne({ user: record.user }); // Assuming userId is stored in newuserplace records
+
+      // Step 3: Merge the user details with the newuserplace record
+      return {
+        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+        userId: userDetails ? userDetails.userId : null // Add user details to the record
+      };
+    }));
+    // Optional: Fetch and attach slotPurchased data
+    // const checkSlot = await SlotPurchased.find({ user: address }).sort({ slotId: -1 });
+
+    // if (checkSlot.length > 0) {
+    //   user.slotPurchased = checkSlot.map(slot => slot.slotId);
+    //   await user.save();
+    // }
+
+    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
+
+  } catch (error) {
+    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error.message });
+  }
+
+})
+router.get("/userIncomeByUser" , async (req , res)=> {
+  const { receiver } = req.query;
+  try {
+    const user = await UserIncome.find({ receiver: receiver });
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found', success: false });
+    }
+
+    const mergedData = await Promise.all(user.map(async (record) => {
+      const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
+
+      // Step 3: Merge the user details with the newuserplace record
+      return {
+        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+        userId: userDetails ? userDetails.userId : null // Add user details to the record
+      };
+    }));
+
+    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
+
+  } catch (error) {
+    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error });
+  }
+
+})
+router.get("/levelIncomeByUser" , async (req , res)=> {
+  const { receiver } = req.query;
+  try {
+    const user = await LevelIncome.find({ receiver: receiver });
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found', success: false });
+    }
+
+    const mergedData = await Promise.all(user.map(async (record) => {
+      const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
+
+      // Step 3: Merge the user details with the newuserplace record
+      return {
+        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+        userId: userDetails ? userDetails.userId : null // Add user details to the record
+      };
+    }));
+
+    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
+
+  } catch (error) {
+    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error });
+  }
+
+})
+
+
 
 router.get("/getDownline/:walletAddress", async (req, res) => {
   let userAddress = req.params.walletAddress;
@@ -424,5 +532,4 @@ router.get("/graph-data", verifyToken, async (req, res) => {
     });
   }
 });
-
 module.exports = router;
