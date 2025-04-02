@@ -770,7 +770,7 @@ const getUsers = async ()=>{
 
 }
 
-getUsers();
+// getUsers();
 
 cron.schedule('30 17 * * 0', () => {
   // console.log("Checking condition...");
