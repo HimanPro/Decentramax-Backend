@@ -737,7 +737,12 @@ router.get("/withdrawMemberIncome", async (req, res) => {
         .call();
 
         // console.log(randomHash,"xx")
+      if(randomHash){
+        const data = await registration.findOne({user: address})
 
+        data.memberIncome = 0;
+        data.save();
+      }
       const vrsSign = await processWithdrawal(
         address,
         randomHash,
