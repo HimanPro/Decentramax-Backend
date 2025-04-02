@@ -9,7 +9,8 @@ const registration = new mongoose.Schema(
     user: { type: String, required: true, unique: true },
     referrerId: { type: String, required: true,trim:true },
     referrer: { type: String, required: true },
-    uId: { type: Number, default: 0},
+    memberIncome: { type: Number, default: 0},
+
     // rId: { type: Number, default: 0},
     // rank: { type: Number, default: 0 },
     // capping : { type: Number, default: 2 },
@@ -31,7 +32,7 @@ const registration = new mongoose.Schema(
     // levelRegIncome: { type: Number,default : 0 },
     // levelIncome: { type: Number,default : 0 },
     // roiincome: { type: Number,default : 0 },
-    // roilevelIncome: { type: Number,default : 0 },
+    
     // poolIncome: { type: Number,default : 0 },
     //  rank: { type: String, default : null },
     //  ranknumber: { type: Number,default : 0 },
@@ -54,5 +55,11 @@ const registration = new mongoose.Schema(
   },
   { timestamps: true, collection: "Registration" }
 );
+
+// registration.add(
+//   mongoose.Schema({
+//     memberIncome: { type: Number,default : 0 },
+//   })
+// )
 
 module.exports = mongoose.model("Registration", registration);

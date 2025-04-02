@@ -14,7 +14,7 @@ const withdrawalSchema = new Schema({
     type: Number,
     required: true
   },
-  trxnHash : {
+  txHash : {
     type: String,
     default : null
   },

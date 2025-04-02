@@ -28,6 +28,7 @@ const newuserplace2 = require("./model/newuserplace2");
 const newuserplace3 = require("./model/newuserplace3");
 const SponsorIncome = require("./model/sponsorincome");
 const LevelIncome = require("./model/LevelIncome");
+const WithdrawalModel = require("./model/withdraw");
 
 app.use(express.json());
 
@@ -64,7 +65,7 @@ const web3 = new Web3(
       delay: 5000, // ms
       maxAttempts: 15,
       onTimeout: false,
-    },
+    },    
   })
 );
 
@@ -239,7 +240,21 @@ async function processEvents(events) {
       } catch (e) {
         console.log("Error (SponserReward Event) :", e.message);
       }
-    }
+    }else if (event == "Withdraw") {
+      try {
+        
+        const iswit = await WithdrawalModel.create({
+          user: returnValues.user,
+          weeklyReward: returnValues.weeklyReward,
+          nonce: returnValues.nonce,
+          txHash: transactionHash,
+          block: blockNumber,
+          timestamp: timestamp,
+        });
+      } catch (e) {
+        console.log("Error (withdraw Event) :", e.message);
+      }
+    } 
   }
 }
 

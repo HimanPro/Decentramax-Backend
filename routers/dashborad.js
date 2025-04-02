@@ -11,129 +11,380 @@ const SlotPurchased = require("../model/slotPurchased");
 const UserIncome = require("../model/userIncome");
 const newuserplace = require("../model/newuserplace");
 const LevelIncome = require("../model/LevelIncome");
+const cron = require("node-cron");
+const AsyncLock = require("async-lock");
+const Web3 = require("web3");
+const lock = new AsyncLock();
 
-// router.get("/dashboard", async (req, res) => {
-//   try {
-//     const startOfToday = moment.tz("Asia/Kolkata").startOf("day").toDate();
-//     const endOfToday = moment.tz("Asia/Kolkata").endOf("day").toDate();
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(process.env.RPC_URL, {
+    reconnect: {
+      auto: true,
+      delay: 5000, // ms
+      maxAttempts: 15,
+      onTimeout: false,
+    },
+  })
+);
 
-//     console.log(startOfToday, ":::", endOfToday);
-
-//     const totaluser = await registration.find({}).countDocuments();
-//     const activeUser = await registration.find({ stake_amount: { $gt: 0 } }).countDocuments();
-//     const inactiveUser = await registration.find({ stake_amount: 0 }).countDocuments();
-
-//     const allTimeTotals = await stake2.aggregate([
-//       {
-//         $group: {
-//           _id: "$plan",
-//           totalAmount: { $sum: "$amount" },
-//           totalToken: { $sum: "$token" },
-//         }
-//       }
-//     ]);
-
-//     const todayTotals = await stake2.aggregate([
-//       {
-//         $match: {
-//           createdAt: {
-//             $gte: startOfToday,
-//             $lt: endOfToday,
-//           },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: "$plan",
-//           totalAmount: { $sum: "$amount" },
-//           totalToken: { $sum: "$token" },
-//         },
-//       },
-//     ]);
-
-//     const formatTotals = (totals) => {
-//       const result = {
-//         DSC: { totalAmount: 0, totalToken: 0 },
-//         USDT: { totalAmount: 0, totalToken: 0 },
-//         stDSC: { totalAmount: 0, totalToken: 0 },
-//       };
-
-//       totals.forEach(({ _id: plan, totalAmount, totalToken }) => {
-//         if (result[plan]) {
-//           result[plan].totalAmount = totalAmount;
-//           result[plan].totalToken = totalToken;
-//         }
-//       });
-
-//       return result;
-//     };
-
-//     const allTimeFormatted = formatTotals(allTimeTotals);
-//     const todayFormatted = formatTotals(todayTotals);
-
-//     const allTimeTotalStake = await stake2.aggregate([
-//       {
-//         $group: {
-//           _id: null,
-//           totalAmount: { $sum: "$amount" }
-//         }
-//       }
-//     ]);
-
-//     const todayTotalStake = await stake2.aggregate([
-//       {
-//         $match: {
-//           createdAt: {
-//             $gte: startOfToday,
-//             $lt: endOfToday
-//           }
-//         }
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalAmount: { $sum: "$amount" }
-//         }
-//       }
-//     ]);
-
-//     const allTimeAmount = allTimeTotalStake.length > 0 ? allTimeTotalStake[0].totalAmount : 0;
-//     const todayAmount = todayTotalStake.length > 0 ? todayTotalStake[0].totalAmount : 0;
-
-//     // New: Aggregate total withdrawal amount and token where isapprove is true
-//     const totalWithdrawal = await WithdrawalModel.aggregate([
-//       {
-//         $match: { isapprove: true }
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalWithdrawalAmount: { $sum: "$withdrawAmount" },
-//           totalWithdrawalToken: { $sum: "$withdrawToken" }
-//         }
-//       }
-//     ]);
-
-//     const totalWithdrawalAmount = totalWithdrawal.length > 0 ? totalWithdrawal[0].totalWithdrawalAmount : 0;
-//     const totalWithdrawalToken = totalWithdrawal.length > 0 ? totalWithdrawal[0].totalWithdrawalToken : 0;
-
-//     // Respond with all data, including the new withdrawal totals
-//     return res.json({
-//       totaluser,
-//       activeUser,
-//       inactiveUser,
-//       allTimeTotals: allTimeFormatted,
-//       todayTotals: todayFormatted,
-//       allTimeAmount,
-//       todayAmount,
-//       totalWithdrawalAmount,   // New field
-//       totalWithdrawalToken     // New field
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// });
+const ABI = [
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "sender",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "reciever",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "reward",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "LevelIncome",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "referrer",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "place",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "cycle",
+        type: "uint256",
+      },
+    ],
+    name: "NewUserPlace",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "ReEntry",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "referrer",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "userId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "referrerId",
+        type: "uint256",
+      },
+    ],
+    name: "Registration",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "sender",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "UserIncome",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "weeklyReward",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "nonce",
+        type: "uint256",
+      },
+    ],
+    name: "Withdraw",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "onOwnershipTransferred",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "ETHER",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "JOINING_AMT",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "LAST_LEVEL",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "USDT",
+    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "findReferrer",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "weeklyReward", type: "uint256" },
+      { internalType: "uint256", name: "deadline", type: "uint256" },
+    ],
+    name: "getWithdrawHash",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "idToAddress",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_usdt", type: "address" },
+      { internalType: "address", name: "_owner", type: "address" },
+      { internalType: "address", name: "_signOperator", type: "address" },
+    ],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "user", type: "address" }],
+    name: "isUserExists",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_referrel", type: "address" }],
+    name: "joinPlan",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "lastUserId",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "nonce",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_newSignOperator", type: "address" },
+    ],
+    name: "setSignOperator",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "signOperator",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_newOwner", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "users",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "address", name: "referrer", type: "address" },
+      { internalType: "uint256", name: "partnersCount", type: "uint256" },
+      { internalType: "uint256", name: "holdIncome", type: "uint256" },
+      { internalType: "uint256", name: "matrixIncome", type: "uint256" },
+      { internalType: "uint256", name: "levelIncome", type: "uint256" },
+      { internalType: "uint256", name: "weeklyIncome", type: "uint256" },
+      { internalType: "uint256", name: "reinvestCount", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "withdrawUSD",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "weeklyReward", type: "uint256" },
+      { internalType: "uint8", name: "v", type: "uint8" },
+      { internalType: "bytes32", name: "r", type: "bytes32" },
+      { internalType: "bytes32", name: "s", type: "bytes32" },
+      { internalType: "uint256", name: "deadline", type: "uint256" },
+    ],
+    name: "withdrawWithSignature",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "x3CurrentvId",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "x3Index",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "x3vId_number",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+const contract = new web3.eth.Contract(
+  ABI,
+  process.env.MAIN_CONTRACT
+);
 
 router.get("/dashboard", async (req, res) => {
   const { address } = req.query;
@@ -143,17 +394,23 @@ router.get("/dashboard", async (req, res) => {
     const user = await registration.findOne({ user: address });
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found', success: false });
+      return res.status(404).json({ msg: "User not found", success: false });
     }
 
     // Fetch income records from both collections
     const userIncomeRecords = await UserIncome.find({ receiver: address });
     const levelIncomeRecords = await LevelIncome.find({ receiver: address });
-    console.log(levelIncomeRecords ,"222")
+    console.log(levelIncomeRecords, "222");
 
     // Calculate totals
-    const totalUserIncome = userIncomeRecords.reduce((sum, record) => sum + record.amount, 0);
-    const totalLevelIncome = levelIncomeRecords.reduce((sum, record) => sum + record.reward, 0);
+    const totalUserIncome = userIncomeRecords.reduce(
+      (sum, record) => sum + record.amount,
+      0
+    );
+    const totalLevelIncome = levelIncomeRecords.reduce(
+      (sum, record) => sum + record.reward,
+      0
+    );
 
     // Create enhanced user object
     const userWithIncome = {
@@ -162,374 +419,367 @@ router.get("/dashboard", async (req, res) => {
       levelIncome: totalLevelIncome,
     };
 
-    res.status(200).json({ 
-      msg: 'Data fetch successful', 
-      success: true, 
-      user: userWithIncome 
+    res.status(200).json({
+      msg: "Data fetch successful",
+      success: true,
+      user: userWithIncome,
     });
-
   } catch (error) {
-    res.status(500).json({ 
-      msg: 'Error in data fetching', 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      msg: "Error in data fetching",
+      success: false,
+      error: error.message,
     });
   }
 });
 
-
-
-router.get ("/Matrix" , async (req , res)=> {
+router.get("/Matrix", async (req, res) => {
   const { address } = req.query;
   try {
     const user = await newuserplace.find({ referrer: address });
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found', success: false });
+      return res.status(404).json({ msg: "User not found", success: false });
     }
 
-    const mergedData = await Promise.all(user.map(async (record) => {
-      const userDetails = await registration.findOne({ user: record.user }); // Assuming userId is stored in newuserplace records
+    const mergedData = await Promise.all(
+      user.map(async (record) => {
+        const userDetails = await registration.findOne({ user: record.user }); // Assuming userId is stored in newuserplace records
 
-      // Step 3: Merge the user details with the newuserplace record
-      return {
-        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
-        userId: userDetails ? userDetails.userId : null // Add user details to the record
-      };
-    }));
-    // Optional: Fetch and attach slotPurchased data
-    // const checkSlot = await SlotPurchased.find({ user: address }).sort({ slotId: -1 });
+        // Step 3: Merge the user details with the newuserplace record
+        return {
+          ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+          userId: userDetails ? userDetails.userId : null, // Add user details to the record
+        };
+      })
+    );
 
-    // if (checkSlot.length > 0) {
-    //   user.slotPurchased = checkSlot.map(slot => slot.slotId);
-    //   await user.save();
-    // }
 
-    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
-
+    res
+      .status(200)
+      .json({ msg: "Data fetch successful", success: true, user: mergedData });
   } catch (error) {
-    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error.message });
+    res
+      .status(500)
+      .json({
+        msg: "Error in data fetching",
+        success: false,
+        error: error.message,
+      });
   }
-
-})
-router.get("/userIncomeByUser" , async (req , res)=> {
+});
+router.get("/userIncomeByUser", async (req, res) => {
   const { receiver } = req.query;
   try {
     const user = await UserIncome.find({ receiver: receiver });
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found', success: false });
+      return res.status(404).json({ msg: "User not found", success: false });
     }
 
-    const mergedData = await Promise.all(user.map(async (record) => {
-      const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
+    const mergedData = await Promise.all(
+      user.map(async (record) => {
+        const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
 
-      // Step 3: Merge the user details with the newuserplace record
-      return {
-        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
-        userId: userDetails ? userDetails.userId : null // Add user details to the record
-      };
-    }));
+        // Step 3: Merge the user details with the newuserplace record
+        return {
+          ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+          userId: userDetails ? userDetails.userId : null, // Add user details to the record
+        };
+      })
+    );
 
-    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
-
+    res
+      .status(200)
+      .json({ msg: "Data fetch successful", success: true, user: mergedData });
   } catch (error) {
-    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error });
+    res
+      .status(500)
+      .json({ msg: "Error in data fetching", success: false, error: error });
   }
-
-})
-router.get("/levelIncomeByUser" , async (req , res)=> {
+});
+router.get("/levelIncomeByUser", async (req, res) => {
   const { receiver } = req.query;
   try {
     const user = await LevelIncome.find({ receiver: receiver });
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found', success: false });
+      return res.status(404).json({ msg: "User not found", success: false });
     }
 
-    const mergedData = await Promise.all(user.map(async (record) => {
-      const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
+    const mergedData = await Promise.all(
+      user.map(async (record) => {
+        const userDetails = await registration.findOne({ user: record.sender }); // Assuming userId is stored in newuserplace records
 
-      // Step 3: Merge the user details with the newuserplace record
-      return {
-        ...record.toObject(), // Convert Mongoose document to plain JavaScript object
-        userId: userDetails ? userDetails.userId : null // Add user details to the record
-      };
-    }));
+        // Step 3: Merge the user details with the newuserplace record
+        return {
+          ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+          userId: userDetails ? userDetails.userId : null, // Add user details to the record
+        };
+      })
+    );
 
-    res.status(200).json({ msg: 'Data fetch successful', success: true, user: mergedData});
-
+    res
+      .status(200)
+      .json({ msg: "Data fetch successful", success: true, user: mergedData });
   } catch (error) {
-    res.status(500).json({ msg: 'Error in data fetching', success: false, error: error });
-  }
-
-})
-
-
-
-router.get("/getDownline/:walletAddress", async (req, res) => {
-  let userAddress = req.params.walletAddress;
-  try {
-    // Find the user
-    const user = await registration.findOne({ user: userAddress });
-
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    // Function to calculate income recursively for the downline
-    async function calculateDownlineIncome(wallet) {
-      let totalIncome = 0;
-
-      // Fetch the direct income of the user
-      let selfIncome = await UserIncome.findOne({ user: wallet });
-      if (selfIncome) {
-        totalIncome += selfIncome.amount;
-      }
-
-      // Find the direct downline
-      let downlineUsers = await UserIncome.find({ referrer: wallet });
-
-      // Recursively fetch downline incomes
-      for (let downline of downlineUsers) {
-        totalIncome +=  downline.amount;
-      }
-
-      return totalIncome;
-    }
-
-    // Calculate total income recursively
-    let totalIncome = await calculateDownlineIncome(userAddress);
-
-    // Get total team size
-    async function getTotalTeamSize(wallet, visitedUsers = new Set()) {
-      // Check if the user is already counted
-      if (visitedUsers.has(wallet)) return 0; // Avoid duplicate counting
-      visitedUsers.add(wallet); // Mark this user as visited
-
-      // Find direct downline users
-      let downlineUsers = await UserIncome.find({ referrer: wallet });
-
-      // Use a Set to ensure unique users are counted only once
-      let uniqueUsers = new Set();
-      for (let downline of downlineUsers) {
-        uniqueUsers.add(downline.user);
-      }
-
-      let count = uniqueUsers.size; // Count only unique users
-
-      return count;
-    }
-
-    let totalTeamSize = await getTotalTeamSize(userAddress);
-
-    return res.json({
-      success: true,
-      totalIncome,
-      teamSize: totalTeamSize,
-    });
-
-  } catch (error) {
-    res.json({ success: false, message: error.message });
+    res
+      .status(500)
+      .json({ msg: "Error in data fetching", success: false, error: error });
   }
 });
 
-
-
-router.get("/graph-data", verifyToken, async (req, res) => {
+async function processWithdrawal(userAddress, hash, amount) {
   try {
-    const todayKolkata = moment.tz("Asia/Kolkata").startOf("day");
-    const sevenDaysAgoKolkata = todayKolkata.clone().subtract(6, "days");
+    const lastWithdrawFund = await WithdrawalModel
+      .findOne({ user: userAddress })
+      .sort({ _id: -1 });
+    console.log(lastWithdrawFund, "lastWithdrawFund::::");
+    let prevNonce = 0;
+    if (!lastWithdrawFund) {
+      prevNonce = -1;
+    } else {
+      prevNonce = lastWithdrawFund.nonce;
+    }
 
-    async function fetchDataForDay(dayIndex) {
-      const startOfDayKolkata = sevenDaysAgoKolkata
-        .clone()
-        .add(dayIndex, "days");
-      const endOfDayKolkata = startOfDayKolkata
-        .clone()
-        .add(1, "days")
-        .subtract(1, "milliseconds");
+    const currNonce = await contract.methods.nonce(userAddress).call();
+    console.log(
+      currNonce,
+      "currNonce:::,",
+      prevNonce,
+      "currNonce:::111,",
+      Number(currNonce)
+    );
+    if (prevNonce + 1 !== Number(currNonce)) {
+      throw new Error("Invalid withdrawal request!");
+    }
+    const vrsSign = await giveVrsForWithdrawLpc(
+      userAddress,
+      hash,
+      Number(currNonce),
+      web3.utils.toWei(amount.toString(), "ether")
+    );
 
-      const [stakes, withdraw, topups] = await Promise.all([
-        stake2.find({
-          createdAt: {
-            $gte: startOfDayKolkata.toDate(),
-            $lt: endOfDayKolkata.toDate(),
-          },
-        }),
-        WithdrawalModel.find({
-          timestamp: {
-            $gte: startOfDayKolkata.toDate(),
-            $lt: endOfDayKolkata.toDate(),
-          },
-        }),
-        topup2.find({
-          createdAt: {
-            $gte: startOfDayKolkata.toDate(),
-            $lt: endOfDayKolkata.toDate(),
-          },
-        }),
-      ]);
+    return vrsSign;
+  } catch (error) {
+    console.error("Error in processWithdrawal:", error);
+    throw error;
+  }
+}
 
-      const filteredStakes = stakes.filter((stake) => {
-        const condition1 = stake.ratio == "10" && stake.token == "WYZ-stUSDT";
-        const condition2 = stake.ratio == "20" && stake.token == "WYZ-stUSDT";
-        const condition3 = stake.ratio == "30" && stake.token == "WYZ-stUSDT";
-        const condition4 = stake.ratio == "40" && stake.token == "WYZ-stUSDT";
-        const condition5 = stake.ratio == "50" && stake.token == "WYZ-stUSDT";
-        const condition6 = stake.ratio == "15" && stake.token == "sUSDT-stUSDT";
-        const condition7 = stake.ratio == "20" && stake.token == "sUSDT-stUSDT";
-        const condition8 = stake.ratio == "25" && stake.token == "sUSDT-stUSDT";
-        return (
-          condition1 ||
-          condition2 ||
-          condition3 ||
-          condition4 ||
-          condition5 ||
-          condition6 ||
-          condition7 ||
-          condition8
-        );
-      });
+function giveVrsForWithdrawLpc(user, hash, nonce, amount) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = {
+        user,
+        amount,
+      };
 
-      const total = filteredStakes.reduce(
-        (acc, stake) => acc + stake.amount,
-        0
+      const account = web3.eth.accounts.privateKeyToAccount(
+        process.env.Operator_Wallet
       );
 
-      const wyz = filteredStakes.reduce((acc, stake) => {
-        if (stake.ratio == "10") return acc + (stake.amount * 0.1) / 20;
-        if (stake.ratio == "20") return acc + (stake.amount * 0.2) / 20;
-        if (stake.ratio == "30") return acc + (stake.amount * 0.3) / 20;
-        if (stake.ratio == "40") return acc + (stake.amount * 0.4) / 20;
-        if (stake.ratio == "50") return acc + (stake.amount * 0.5) / 20;
-        if (stake.ratio == "15" && stake.token == "sUSDT-stUSDT")
-          return acc + (stake.amount * 0.15) / 20;
-        if (stake.ratio == "20" && stake.token == "sUSDT-stUSDT")
-          return acc + (stake.amount * 0.2) / 20;
-        if (stake.ratio == "25" && stake.token == "sUSDT-stUSDT")
-          return acc + (stake.amount * 0.25) / 20;
-        return acc;
-      }, 0);
-      const transformedAmount = filteredStakes.reduce((acc, stake) => {
-        if (stake.ratio == "10") return acc + stake.amount * 0.9;
-        if (stake.ratio == "20") return acc + stake.amount * 0.8;
-        if (stake.ratio == "30") return acc + stake.amount * 0.7;
-        if (stake.ratio == "40") return acc + stake.amount * 0.6;
-        if (stake.ratio == "50") return acc + stake.amount * 0.5;
-        if (stake.ratio == "15" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.85;
-        if (stake.ratio == "20" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.8;
-        if (stake.ratio == "25" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.75;
-        return acc;
-      }, 0);
+      web3.eth.accounts.wallet.add(account);
+      web3.eth.defaultAccount = account.address;
 
-      const stakeusdt = stakes.filter((stake) => {
-        const usdt1 = stake.ratio == "15" && stake.token == "sUSDT-stUSDT";
-        const usdt2 = stake.ratio == "20" && stake.token == "sUSDT-stUSDT";
-        const usdt3 = stake.ratio == "25" && stake.token == "sUSDT-stUSDT";
+      const signature = await web3.eth.sign(hash, account.address);
 
-        return usdt1 || usdt2 || usdt3;
-      });
+      const vrsValue = parseSignature(signature);
+      data["signature"] = vrsValue;
+      resolve({ ...data, amount });
 
-      const totalusdt = stakeusdt.reduce((acc, stake) => {
-        if (stake.ratio == "15" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.85;
-        if (stake.ratio == "20" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.8;
-        if (stake.ratio == "25" && stake.token == "sUSDT-stUSDT")
-          return acc + stake.amount * 0.75;
-        return acc;
-      }, 0);
-
-      const roiWithdraw = withdraw
-        .filter(
-          (withdrawroi) =>
-            withdrawroi.wallet_type == "roi" && withdrawroi.isapprove == true
-        )
-        .reduce((acc, withdrawroi) => acc + withdrawroi.withdrawAmount, 0);
-
-      const referralWithdraw = withdraw
-        .filter(
-          (withdrawreferral) =>
-            withdrawreferral.wallet_type == "referral" &&
-            withdrawreferral.isapprove == true
-        )
-        .reduce(
-          (acc, withdrawreferral) => acc + withdrawreferral.withdrawAmount,
-          0
-        );
-
-      const topupdata = topups.reduce((acc, data) => {
-        const amount = parseFloat(data.amount);
-        return acc + amount;
-      }, 0);
-
-      return {
-        day: startOfDayKolkata.format("dddd"),
-        stakewyz: parseFloat(wyz),
-        stakestusdt: parseFloat(transformedAmount),
-        total: parseFloat(total),
-        topus: parseFloat(topupdata),
-        stakeusdt: parseFloat(totalusdt),
-        roi: parseFloat(roiWithdraw),
-        referral: parseFloat(referralWithdraw),
-      };
+      console.log(data, "data::::");
+    } catch (error) {
+      console.error("Error in signing the message:", error);
+      reject(error);
     }
+  });
+}
 
-    const results = await Promise.all(
-      Array.from({ length: 7 }).map((_, index) => fetchDataForDay(index))
-    );
+function parseSignature(signature) {
+  const sigParams = signature.substr(2);
+  const v = "0x" + sigParams.substr(64 * 2, 2);
+  const r = "0x" + sigParams.substr(0, 64);
+  const s = "0x" + sigParams.substr(64, 64);
 
-    const Stakeswyz = {};
-    const Stakestusdt = {};
-    const Stakeusdt = {};
-    const Totalamount = {};
-    const Topusdata = {};
-    const withdrawRoi = {};
-    const refrealWithdraw = {};
+  return { v, r, s };
+}
 
-    results.forEach(
-      ({
-        day,
-        stakewyz,
-        stakestusdt,
-        stakeusdt,
-        roi,
-        referral,
-        topus,
-        total,
-      }) => {
-        Stakeswyz[day] = stakewyz;
-        Stakestusdt[day] = stakestusdt;
-        Stakeusdt[day] = stakeusdt;
-        Totalamount[day] = total;
-        Topusdata[day] = topus;
-        withdrawRoi[day] = roi;
-        refrealWithdraw[day] = referral;
+router.get("/withdrawMemberIncome", async (req, res) => {
+  const { address } = req.query;
+  console.log(address, "walletAddress");
+
+  if (!address) {
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
+
+  try {
+    // Locking the walletAddress to prevent concurrent modifications
+    await lock.acquire(address, async () => {
+      const fData = await registration.findOne({ user: address });
+      console.log(fData, "fData:::");
+      if (!fData) {
+        res.status(200).json({
+          status: 200,
+          message: "User Not Found",
+        });
       }
-    );
 
-    return res.json({
-      status: 200,
-      error: false,
-      Stakeswyz,
-      Stakestusdt,
-      Stakeusdt,
-      Totalamount,
-      Topusdata,
-      withdrawRoi,
-      refrealWithdraw,
+      const amount = fData.memberIncome;
+      console.log(amount, "amount");
+
+      if (amount < 1) {
+        res.status(200).json({
+          status: 200,
+          message: "Insufficient Member Income minimum is $1",
+        });
+      }
+
+      const currentTime = new Date();
+
+      // Add 3 minutes (3 * 60 * 1000 milliseconds)
+      const threeMinutesLater = new Date(currentTime.getTime() + 3 * 60 * 1000);
+
+      // Convert to timestamp in milliseconds
+      const timestampInMilliseconds = threeMinutesLater.getTime();
+
+      // Generate hash and process withdrawal
+
+      const amountBN = web3.utils.toWei(amount.toString(), "ether");
+
+      console.log("amountBN ", amountBN);
+
+      const randomHash = await contract.methods
+        .getWithdrawHash(address, amountBN, timestampInMilliseconds)
+        .call();
+
+        // console.log(randomHash,"xx")
+
+      const vrsSign = await processWithdrawal(
+        address,
+        randomHash,
+        amount
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Member Income Withdrawal Request Processed Successfully",
+        vrsSign,
+        deadline: timestampInMilliseconds,
+      });
     });
   } catch (error) {
-    console.error("Error calculating data:", error);
-    return res.status(500).json({
-      status: 500,
-      error: true,
-      message: "Internal Server Error",
-    });
+    if (error.status) {
+      return res
+        .status(error.status)
+        .json({ success: false, message: error.message });
+    }
+    console.error("Withdrawal error:", error.stack || error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error. Please try again later.",
+      });
   }
 });
+
+const getTeamSize = async (address) => {
+  try {
+    // const { address } = req.query;
+    console.log("Address:", address);
+
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+
+    const userData = await registration
+      .aggregate([
+        {
+          $match: {
+            user: address,
+          },
+        },
+        {
+          $graphLookup: {
+            from: "Registration", // Ensure collection name is correct
+            startWith: "$user", // Starting user
+            connectFromField: "user", // Connect users
+            connectToField: "referrer", // Match with referrer field
+            as: "team",
+            maxDepth: 5,
+            depthField: "level",
+          },
+        },
+        { $unwind: "$team" },
+        {
+          $project: {
+            _id: 0,
+            userId: "$team.userId",
+            user: "$team.user",
+            referrer: "$team.referrer",
+            referrerId: "$team.referrerId",
+            timestamp: "$team.timestamp",
+            createdAt: "$team.createdAt",
+          },
+        },
+      ])
+      .sort({ createdAt: 1 });
+
+    const teamSize = userData.length;
+
+    let message;
+    if (teamSize >= 5) {
+    let user = await registration.findOne({user: address})
+    user.memberIncome= user.memberIncome + 5
+    user.save()
+    }
+    if (teamSize >= 10) {
+      let user = await registration.findOne({user: address})
+      user.memberIncome= user.memberIncome + 10
+      user.save()
+    }
+    if (teamSize >= 20) {
+      let user = await registration.findOne({user: address})
+      user.memberIncome= user.memberIncome + 20
+      user.save()
+    }
+    if (teamSize >= 50) {
+      let user = await registration.findOne({user: address})
+      user.memberIncome= user.memberIncome + 50
+      user.save()
+    }
+    if (teamSize >= 100) {
+      let user = await registration.findOne({user: address})
+      user.memberIncome= user.memberIncome + 100
+      user.save()
+    }
+    // return message;
+  } catch (error) {
+    console.error("Error fetching member income:", error);
+  }
+};
+
+const getUsers = async ()=>{
+  const users = await registration.find().sort({createdAt: -1});
+
+  const address = users.map((user)=> user.user )
+
+  console.log(address,"adddd")
+  return address;
+
+}
+
+getUsers();
+
+cron.schedule('30 17 * * 0', () => {
+  // console.log("Checking condition...");
+  const address = getUsers();
+
+  for(let i = 0; i< address.length; i++){
+    getTeamSize(address[i]);
+  }
+  // getTeamSize("0xf0c90d0E550AFA5C4d557A7BeBfB89B1ea4d97f8");
+});
+
 module.exports = router;
