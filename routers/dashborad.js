@@ -604,86 +604,6 @@ function parseSignature(signature) {
 
   return { v, r, s };
 }
-
-router.get("/withdrawMemberIncome", async (req, res) => {
-  const { address } = req.query;
-  console.log(address, "walletAddress");
-
-  if (!address) {
-    return res.status(400).json({ success: false, message: "Invalid input" });
-  }
-
-  try {
-    // Locking the walletAddress to prevent concurrent modifications
-    await lock.acquire(address, async () => {
-      const fData = await registration.findOne({ user: address });
-      console.log(fData, "fData:::");
-      if (!fData) {
-        res.status(200).json({
-          status: 200,
-          message: "User Not Found",
-        });
-      }
-
-      const amount = fData.memberIncome;
-      console.log(amount, "amount");
-
-      if (amount < 1) {
-        res.status(200).json({
-          status: 200,
-          message: "Insufficient Member Income minimum is $1",
-        });
-      }
-
-      const currentTime = new Date();
-
-      // Add 3 minutes (3 * 60 * 1000 milliseconds)
-      const threeMinutesLater = new Date(currentTime.getTime() + 3 * 60 * 1000);
-
-      // Convert to timestamp in milliseconds
-      const timestampInMilliseconds = threeMinutesLater.getTime();
-
-      // Generate hash and process withdrawal
-
-      const amountBN = web3.utils.toWei(amount.toString(), "ether");
-
-      console.log("amountBN ", amountBN);
-
-      const randomHash = await contract.methods
-        .getWithdrawHash(address, amountBN, timestampInMilliseconds)
-        .call();
-
-        // console.log(randomHash,"xx")
-
-      const vrsSign = await processWithdrawal(
-        address,
-        randomHash,
-        amount
-      );
-
-      return res.status(200).json({
-        success: true,
-        message: "Member Income Withdrawal Request Processed Successfully",
-        vrsSign,
-        deadline: timestampInMilliseconds,
-      });
-    });
-  } catch (error) {
-    if (error.status) {
-      return res
-        .status(error.status)
-        .json({ success: false, message: error.message });
-    }
-    console.error("Withdrawal error:", error.stack || error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error. Please try again later.",
-      });
-  }
-});
-
 const getTeamSize = async (address) => {
   try {
     // const { address } = req.query;
@@ -765,12 +685,10 @@ const getUsers = async ()=>{
 
   const address = users.map((user)=> user.user )
 
-  console.log(address,"adddd")
   return address;
 
 }
 
-// getUsers();
 
 cron.schedule('30 17 * * 0', () => {
   // console.log("Checking condition...");
@@ -781,5 +699,97 @@ cron.schedule('30 17 * * 0', () => {
   }
   // getTeamSize("0xf0c90d0E550AFA5C4d557A7BeBfB89B1ea4d97f8");
 });
+
+router.get("/withdrawMemberIncome", async (req, res) => {
+  const { address } = req.query;
+  console.log(address, "walletAddress");
+
+  if (!address) {
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
+
+  try {
+    // Locking the walletAddress to prevent concurrent modifications
+    await lock.acquire(address, async () => {
+      const fData = await registration.findOne({ user: address });
+      console.log(fData, "fData:::");
+      if (!fData) {
+        res.status(200).json({
+          status: 200,
+          message: "User Not Found",
+        });
+      }
+
+      const amount = fData.memberIncome;
+      console.log(amount, "amount");
+
+      if (amount < 1) {
+        res.status(200).json({
+          status: 200,
+          message: "Insufficient Member Income minimum is $1",
+        });
+      }
+
+      const currentTime = new Date();
+
+      // Add 3 minutes (3 * 60 * 1000 milliseconds)
+      const threeMinutesLater = new Date(currentTime.getTime() + 3 * 60 * 1000);
+
+      // Convert to timestamp in milliseconds
+      const timestampInMilliseconds = threeMinutesLater.getTime();
+
+      // Generate hash and process withdrawal
+
+      const amountBN = web3.utils.toWei(amount.toString(), "ether");
+
+      console.log("amountBN ", amountBN);
+
+      const randomHash = await contract.methods
+        .getWithdrawHash(address, amountBN, timestampInMilliseconds)
+        .call();
+
+        // console.log(randomHash,"xx")
+
+      const vrsSign = await processWithdrawal(
+        address,
+        randomHash,
+        amount
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Member Income Withdrawal Request Processed Successfully",
+        vrsSign,
+        deadline: timestampInMilliseconds,
+      });
+    });
+  } catch (error) {
+    if (error.status) {
+      return res
+        .status(error.status)
+        .json({ success: false, message: error.message });
+    }
+    console.error("Withdrawal error:", error.stack || error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error. Please try again later.",
+      });
+  }
+});
+router.get('/directReferrer', async (req, res) => {
+  let {address} = req.query
+  if(!address){
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
+
+  const data = await registration.find({referrer: address})
+  
+  return res.status(200).json({
+    data
+  })
+})
+
 
 module.exports = router;
