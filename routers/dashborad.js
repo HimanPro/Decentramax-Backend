@@ -539,7 +539,7 @@ async function processWithdrawal(userAddress, hash, amount) {
     if (!lastWithdrawFund) {
       prevNonce = -1;
     } else {
-      prevNonce = lastWithdrawFund.nonce;ssss
+      prevNonce = lastWithdrawFund.nonce;
     }
 
     const currNonce = await contract.methods.nonce(userAddress).call();
