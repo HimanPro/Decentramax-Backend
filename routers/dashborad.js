@@ -533,13 +533,13 @@ async function processWithdrawal(userAddress, hash, amount) {
   try {
     const lastWithdrawFund = await WithdrawalModel
       .findOne({ user: userAddress })
-      .sort({ _id: -1 });
+      .sort({ createdAt: -1 });
     console.log(lastWithdrawFund, "lastWithdrawFund::::");
     let prevNonce = 0;
     if (!lastWithdrawFund) {
       prevNonce = -1;
     } else {
-      prevNonce = lastWithdrawFund.nonce;
+      prevNonce = lastWithdrawFund.nonce;ssss
     }
 
     const currNonce = await contract.methods.nonce(userAddress).call();
@@ -739,7 +739,6 @@ router.get("/withdrawMemberIncome", async (req, res) => {
         // console.log(randomHash,"xx")
       if(randomHash){
         const data = await registration.findOne({user: address})
-
         data.memberIncome = 0;
         data.save();
       }
