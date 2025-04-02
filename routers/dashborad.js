@@ -604,105 +604,93 @@ function parseSignature(signature) {
 
   return { v, r, s };
 }
-const getTeamSize = async (address) => {
+async function getTeamSize(address) {
+  if (!address) {
+    console.error("Invalid address provided.");
+    return;
+  }
+
   try {
-    // const { address } = req.query;
-    console.log("Address:", address);
+    console.log("Processing address:", address);
 
-    if (!address) {
-      return res.status(400).json({ error: "Address is required" });
-    }
-
-    const userData = await registration
-      .aggregate([
-        {
-          $match: {
-            user: address,
-          },
+    const userData = await registration.aggregate([
+      { $match: { user: address } },
+      {
+        $graphLookup: {
+          from: "Registration",
+          startWith: "$user",
+          connectFromField: "user",
+          connectToField: "referrer",
+          as: "team",
+          maxDepth: 5,
+          depthField: "level",
         },
-        {
-          $graphLookup: {
-            from: "Registration", // Ensure collection name is correct
-            startWith: "$user", // Starting user
-            connectFromField: "user", // Connect users
-            connectToField: "referrer", // Match with referrer field
-            as: "team",
-            maxDepth: 5,
-            depthField: "level",
-          },
+      },
+      { $unwind: "$team" },
+      {
+        $project: {
+          _id: 0,
+          userId: "$team.userId",
+          user: "$team.user",
+          referrer: "$team.referrer",
+          referrerId: "$team.referrerId",
+          timestamp: "$team.timestamp",
+          createdAt: "$team.createdAt",
         },
-        { $unwind: "$team" },
-        {
-          $project: {
-            _id: 0,
-            userId: "$team.userId",
-            user: "$team.user",
-            referrer: "$team.referrer",
-            referrerId: "$team.referrerId",
-            timestamp: "$team.timestamp",
-            createdAt: "$team.createdAt",
-          },
-        },
-      ])
-      .sort({ createdAt: 1 });
+      },
+    ]).sort({ createdAt: 1 });
 
     const teamSize = userData.length;
+    console.log(`Team size for ${address}: ${teamSize}`);
 
-    let message;
-    if (teamSize >= 5) {
-    let user = await registration.findOne({user: address})
-    user.memberIncome= user.memberIncome + 5
-    user.save()
-    }
-    if (teamSize >= 10) {
-      let user = await registration.findOne({user: address})
-      user.memberIncome= user.memberIncome + 10
-      user.save()
-    }
-    if (teamSize >= 20) {
-      let user = await registration.findOne({user: address})
-      user.memberIncome= user.memberIncome + 20
-      user.save()
-    }
-    if (teamSize >= 50) {
-      let user = await registration.findOne({user: address})
-      user.memberIncome= user.memberIncome + 50
-      user.save()
-    }
+    let incomeToAdd = 0;
     if (teamSize >= 100) {
-      let user = await registration.findOne({user: address})
-      user.memberIncome= user.memberIncome + 100
-      user.save()
+      incomeToAdd = 100;
+    } else if (teamSize >= 50) {
+      incomeToAdd = 50;
+    } else if (teamSize >= 20) {
+      incomeToAdd = 20;
+    } else if (teamSize >= 10) {
+      incomeToAdd = 10;
+    } else if (teamSize >= 5) {
+      incomeToAdd = 5;
     }
-    // return message;
+
+    if (incomeToAdd > 0) {
+      let user = await registration.findOne({ user: address });
+      if (user) {
+        user.memberIncome = (user.memberIncome || 0) + incomeToAdd;
+        await user.save();
+        console.log(`Updated member income for ${address}: +${incomeToAdd}`);
+      } else {
+        console.warn(`User not found: ${address}`);
+      }
+    }
   } catch (error) {
-    console.error("Error fetching member income:", error);
+    console.error(`Error fetching team size for ${address}:`, error);
   }
-};
-
-const getUsers = async ()=>{
-  const users = await registration.find().sort({createdAt: -1});
-
-  const address = users.map((user)=> user.user )
-
-  return address;
-
 }
 
-
-cron.schedule('30 17 * * 0', () => {
-  // console.log("Checking condition...");
-  const address = getUsers();
-
-  for(let i = 0; i< address.length; i++){
-    getTeamSize(address[i]);
+async function getUsers() {
+  try {
+    const users = await registration.find().sort({ createdAt: -1 });
+    return users.map((user) => user.user); // Returns an array of user addresses
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return [];
   }
-  // getTeamSize("0xf0c90d0E550AFA5C4d557A7BeBfB89B1ea4d97f8");
+}
+
+cron.schedule('30 17 * * 0', async () => {
+  console.log("Checking team sizes...");
+  const addresses = await getUsers(); // Wait for the user list
+  for (const address of addresses) {
+    await getTeamSize(address); // Process each user
+  }
 });
 
 router.get("/withdrawMemberIncome", async (req, res) => {
   const { address } = req.query;
-  console.log(address, "walletAddress");
 
   if (!address) {
     return res.status(400).json({ success: false, message: "Invalid input" });
