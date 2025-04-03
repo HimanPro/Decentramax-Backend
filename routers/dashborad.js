@@ -799,13 +799,13 @@ router.get("/getAddressbyRefrralIdd", async (req, res) => {
 });
 router.get("/getdetailbyUserId", async (req, res) => {
   try {
-    const  {userId}  = req.query;
+    const  {address}  = req.query;
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
+    if (!address) {
+      return res.status(400).json({ error: "address is required" });
     }
 
-    const record = await registration.findOne({ userId: userId });
+    const record = await registration.findOne({ user: address });
 
     res.status(200).json(record);
   } catch (error) {
