@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const registration = require("../model/registration");
-
 const stake2 = require("../model/stake");
 const moment = require("moment-timezone");
 const WithdrawalModel = require("../model/withdraw");
@@ -782,6 +781,36 @@ router.get('/directReferrer', async (req, res) => {
     data
   })
 })
+router.get("/getAddressbyRefrralIdd", async (req, res) => {
+  try {
+    const  {userId}  = req.query;
 
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
 
+    const record = await registration.findOne({ userId: userId });
+
+    res.status(200).json(record.user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+router.get("/getdetailbyUserId", async (req, res) => {
+  try {
+    const  {userId}  = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    const record = await registration.findOne({ userId: userId });
+
+    res.status(200).json(record);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 module.exports = router;
