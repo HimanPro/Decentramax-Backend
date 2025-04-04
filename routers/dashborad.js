@@ -26,15 +26,365 @@ const web3 = new Web3(
   })
 );
 
-const ABI = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"address","name":"reciever","type":"address"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"level","type":"uint256"}],"name":"LevelIncome","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":true,"internalType":"address","name":"referrer","type":"address"},{"indexed":false,"internalType":"uint256","name":"place","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"level","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"cycle","type":"uint256"}],"name":"NewUserPlace","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"level","type":"uint256"}],"name":"ReEntry","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":true,"internalType":"address","name":"referrer","type":"address"},{"indexed":true,"internalType":"uint256","name":"userId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"referrerId","type":"uint256"}],"name":"Registration","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"receiver","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"level","type":"uint256"}],"name":"UserIncome","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"weeklyReward","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"nonce","type":"uint256"}],"name":"Withdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"onOwnershipTransferred","type":"event"},{"inputs":[],"name":"ETHER","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"JOINING_AMT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LAST_LEVEL","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"USDT","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"findReferrer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"},{"internalType":"uint256","name":"weeklyReward","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"getWithdrawHash","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"idToAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_usdt","type":"address"},{"internalType":"address","name":"_owner","type":"address"},{"internalType":"address","name":"_signOperator","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"isUserExists","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_referrel","type":"address"}],"name":"joinPlan","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"lastUserId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"nonce","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_newSignOperator","type":"address"}],"name":"setSignOperator","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"signOperator","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"address","name":"referrer","type":"address"},{"internalType":"uint256","name":"partnersCount","type":"uint256"},{"internalType":"uint256","name":"holdIncome","type":"uint256"},{"internalType":"uint256","name":"matrixIncome","type":"uint256"},{"internalType":"uint256","name":"levelIncome","type":"uint256"},{"internalType":"uint256","name":"weeklyIncome","type":"uint256"},{"internalType":"uint256","name":"reinvestCount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawUSD","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"weeklyReward","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"withdrawWithSignature","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"x3CurrentvId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"x3Index","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"x3vId_number","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]
-const contract = new web3.eth.Contract(
-  ABI,
-  process.env.MAIN_CONTRACT
-);
+const ABI = [
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "sender",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "reciever",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "reward",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "LevelIncome",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "referrer",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "place",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "cycle",
+        type: "uint256",
+      },
+    ],
+    name: "NewUserPlace",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "ReEntry",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "referrer",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "userId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "referrerId",
+        type: "uint256",
+      },
+    ],
+    name: "Registration",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "sender",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "level",
+        type: "uint256",
+      },
+    ],
+    name: "UserIncome",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "weeklyReward",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "nonce",
+        type: "uint256",
+      },
+    ],
+    name: "Withdraw",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "onOwnershipTransferred",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "ETHER",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "JOINING_AMT",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "LAST_LEVEL",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "USDT",
+    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "findReferrer",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "weeklyReward", type: "uint256" },
+      { internalType: "uint256", name: "deadline", type: "uint256" },
+    ],
+    name: "getWithdrawHash",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "idToAddress",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_usdt", type: "address" },
+      { internalType: "address", name: "_owner", type: "address" },
+      { internalType: "address", name: "_signOperator", type: "address" },
+    ],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "user", type: "address" }],
+    name: "isUserExists",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_referrel", type: "address" }],
+    name: "joinPlan",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "lastUserId",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "nonce",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_newSignOperator", type: "address" },
+    ],
+    name: "setSignOperator",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "signOperator",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_newOwner", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "users",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "address", name: "referrer", type: "address" },
+      { internalType: "uint256", name: "partnersCount", type: "uint256" },
+      { internalType: "uint256", name: "holdIncome", type: "uint256" },
+      { internalType: "uint256", name: "matrixIncome", type: "uint256" },
+      { internalType: "uint256", name: "levelIncome", type: "uint256" },
+      { internalType: "uint256", name: "weeklyIncome", type: "uint256" },
+      { internalType: "uint256", name: "reinvestCount", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "withdrawUSD",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "weeklyReward", type: "uint256" },
+      { internalType: "uint8", name: "v", type: "uint8" },
+      { internalType: "bytes32", name: "r", type: "bytes32" },
+      { internalType: "bytes32", name: "s", type: "bytes32" },
+      { internalType: "uint256", name: "deadline", type: "uint256" },
+    ],
+    name: "withdrawWithSignature",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "x3CurrentvId",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "x3Index",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "x3vId_number",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+const contract = new web3.eth.Contract(ABI, process.env.MAIN_CONTRACT);
 
 router.get("/dashboard", async (req, res) => {
   const { address } = req.query;
-  console.log(address, "address")
+  console.log(address, "address");
 
   try {
     // Find the user
@@ -100,18 +450,15 @@ router.get("/Matrix", async (req, res) => {
       })
     );
 
-
     res
       .status(200)
       .json({ msg: "Data fetch successful", success: true, user: mergedData });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        msg: "Error in data fetching",
-        success: false,
-        error: error.message,
-      });
+    res.status(500).json({
+      msg: "Error in data fetching",
+      success: false,
+      error: error.message,
+    });
   }
 });
 router.get("/userIncomeByUser", async (req, res) => {
@@ -177,9 +524,9 @@ router.get("/levelIncomeByUser", async (req, res) => {
 
 async function processWithdrawal(userAddress, hash, amount) {
   try {
-    const lastWithdrawFund = await WithdrawalModel
-      .findOne({ user: userAddress })
-      .sort({ createdAt: -1 });
+    const lastWithdrawFund = await WithdrawalModel.findOne({
+      user: userAddress,
+    }).sort({ createdAt: -1 });
     console.log(lastWithdrawFund, "lastWithdrawFund::::");
     let prevNonce = 0;
     if (!lastWithdrawFund) {
@@ -259,32 +606,34 @@ async function getTeamSize(address) {
   try {
     console.log("Processing address:", address);
 
-    const userData = await registration.aggregate([
-      { $match: { user: address } },
-      {
-        $graphLookup: {
-          from: "Registration",
-          startWith: "$user",
-          connectFromField: "user",
-          connectToField: "referrer",
-          as: "team",
-          maxDepth: 5,
-          depthField: "level",
+    const userData = await registration
+      .aggregate([
+        { $match: { user: address } },
+        {
+          $graphLookup: {
+            from: "Registration",
+            startWith: "$user",
+            connectFromField: "user",
+            connectToField: "referrer",
+            as: "team",
+            maxDepth: 5,
+            depthField: "level",
+          },
         },
-      },
-      { $unwind: "$team" },
-      {
-        $project: {
-          _id: 0,
-          userId: "$team.userId",
-          user: "$team.user",
-          referrer: "$team.referrer",
-          referrerId: "$team.referrerId",
-          timestamp: "$team.timestamp",
-          createdAt: "$team.createdAt",
+        { $unwind: "$team" },
+        {
+          $project: {
+            _id: 0,
+            userId: "$team.userId",
+            user: "$team.user",
+            referrer: "$team.referrer",
+            referrerId: "$team.referrerId",
+            timestamp: "$team.timestamp",
+            createdAt: "$team.createdAt",
+          },
         },
-      },
-    ]).sort({ createdAt: 1 });
+      ])
+      .sort({ createdAt: 1 });
 
     const teamSize = userData.length;
     console.log(`Team size for ${address}: ${teamSize}`);
@@ -327,7 +676,7 @@ async function getUsers() {
   }
 }
 
-cron.schedule('30 17 * * 0', async () => {
+cron.schedule("30 17 * * 0", async () => {
   console.log("Checking team sizes...");
   const addresses = await getUsers(); // Wait for the user list
   for (const address of addresses) {
@@ -382,17 +731,13 @@ router.get("/withdrawMemberIncome", async (req, res) => {
         .getWithdrawHash(address, amountBN, timestampInMilliseconds)
         .call();
 
-        // console.log(randomHash,"xx")
-      if(randomHash){
-        const data = await registration.findOne({user: address})
+      // console.log(randomHash,"xx")
+      if (randomHash) {
+        const data = await registration.findOne({ user: address });
         data.memberIncome = 0;
         data.save();
       }
-      const vrsSign = await processWithdrawal(
-        address,
-        randomHash,
-        amount
-      );
+      const vrsSign = await processWithdrawal(address, randomHash, amount);
 
       return res.status(200).json({
         success: true,
@@ -408,29 +753,27 @@ router.get("/withdrawMemberIncome", async (req, res) => {
         .json({ success: false, message: error.message });
     }
     console.error("Withdrawal error:", error.stack || error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error. Please try again later.",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
+    });
   }
 });
-router.get('/directReferrer', async (req, res) => {
-  let {address} = req.query
-  if(!address){
+router.get("/directReferrer", async (req, res) => {
+  let { address } = req.query;
+  if (!address) {
     return res.status(400).json({ success: false, message: "Invalid input" });
   }
 
-  const data = await registration.find({referrer: address})
-  
+  const data = await registration.find({ referrer: address });
+
   return res.status(200).json({
-    data
-  })
-})
+    data,
+  });
+});
 router.get("/getAddressbyRefrralIdd", async (req, res) => {
   try {
-    const  {userId}  = req.query;
+    const { userId } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
@@ -446,7 +789,7 @@ router.get("/getAddressbyRefrralIdd", async (req, res) => {
 });
 router.get("/getdetailbyUserId", async (req, res) => {
   try {
-    const  {address}  = req.query;
+    const { address } = req.query;
 
     if (!address) {
       return res.status(400).json({ error: "address is required" });

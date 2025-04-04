@@ -6,6 +6,7 @@ const registration = new mongoose.Schema(
       required: true,
       index: { unique: true },
     },
+    uId: { type: Number, required: true },
     user: { type: String, required: true, unique: true },
     referrerId: { type: String, required: true,trim:true },
     referrer: { type: String, required: true },
