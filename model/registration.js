@@ -7,6 +7,7 @@ const registration = new mongoose.Schema(
       index: { unique: true },
     },
     uId: { type: Number, required: true },
+    rId: { type: Number, required: true },
     user: { type: String, required: true, unique: true },
     referrerId: { type: String, required: true,trim:true },
     referrer: { type: String, required: true },
@@ -55,6 +56,11 @@ const registration = new mongoose.Schema(
     // teamBusinessnew:{type:Number, default:0}
   },
   { timestamps: true, collection: "Registration" }
+);
+
+registration.index(
+  { user: 1,uId:1,rId:1, referrer: 1, txHash: 1 },
+  { unique: true }
 );
 
 // registration.add(

@@ -473,6 +473,7 @@ async function processEvents(events) {
             let isCreated = await registration.create({
               userId: userId,
               uId: returnValues.userId,
+              rId: returnValues.referrerId,
               user: returnValues.user,
               referrer: returnValues.referrer,
               // rId: returnValues.referrerId,
@@ -571,8 +572,6 @@ async function processEvents(events) {
       try {
         await reEntry.create({
           user: returnValues.user,
-          martixId: returnValues.matrixId,
-          slotId: returnValues.slotId,
           level: returnValues.level,
           txHash: transactionHash,
           block: blockNumber,
