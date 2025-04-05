@@ -615,6 +615,7 @@ function parseSignature(signature) {
   return { v, r, s };
 }
 async function getTeamSize(address) {
+
   if (!address) {
     console.error("Invalid address provided.");
     return;
@@ -948,8 +949,7 @@ router.get("/getUserProfile", async (req, res) => {
     }
 
     // Parallel data fetching for efficiency
-    const [teamSize, todayIncome, monthlyIncome] = await Promise.all([
-      getTeamSize(address),
+    const [ todayIncome, monthlyIncome] = await Promise.all([
       todayTotalIncome(address),
       monthlyTotalIncome(address)
     ]);
@@ -970,7 +970,5 @@ router.get("/getUserProfile", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-
 
 module.exports = router;
