@@ -13,6 +13,7 @@ const LevelIncome = require("../model/LevelIncome");
 const cron = require("node-cron");
 const AsyncLock = require("async-lock");
 const Web3 = require("web3");
+const Profile = require("../model/Profile");
 const lock = new AsyncLock();
 
 const web3 = new Web3(
@@ -804,3 +805,52 @@ router.get("/getdetailbyUserId", async (req, res) => {
   }
 });
 module.exports = router;
+
+router.put("/updateUserProfile", async (req, res) => {
+  try {
+    const { address, profileUrl, name } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+
+    const updatedProfile = await Profile.updateOne(
+      { address }, // Filter by address
+      {
+        $set: {
+          profileUrl,
+          name,
+        },
+      },
+      { upsert: true } // Create a new document if none matches
+    );
+
+    res
+      .status(200)
+      .json({ message: "Profile updated successfully", data: updatedProfile });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/getUserProfile", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+
+    const data = await Profile.findOne({ address });
+
+    if (!data) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    res.status(200).json({ message: "Profile fetched successfully", data });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
