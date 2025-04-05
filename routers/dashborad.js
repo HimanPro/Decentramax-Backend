@@ -605,8 +605,6 @@ async function getTeamSize(address) {
   }
 
   try {
-    console.log("Processing address:", address);
-
     const userData = await registration
       .aggregate([
         { $match: { user: address } },
@@ -804,7 +802,92 @@ router.get("/getdetailbyUserId", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-module.exports = router;
+
+
+async function todayTotalIncome(address) {
+  try {
+    // Get start and end of today
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    // Filter for today's income for given address
+    const levelIncomeToday = await LevelIncome.find({
+      receiver: address,
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    const userIncomeToday = await UserIncome.find({
+      receiver: address,
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    // Sum rewards (make sure to convert BigInt-like numbers properly)
+    const totalLevelIncome = levelIncomeToday.reduce(
+      (sum, item) => sum + Number(item.reward),
+      0
+    );
+    const totalUserIncome = userIncomeToday.reduce(
+      (sum, item) => sum + Number(item.amount),
+      0
+    );
+
+    const total = totalLevelIncome + totalUserIncome;
+   
+    return total;
+  } catch (err) {
+    console.error("Error calculating today's income:", err);
+    throw new Error("Failed to fetch today's income");
+  }
+}
+
+async function monthlyTotalIncome(address) {
+  try {
+    // Get start and end of current month (UTC)
+    const now = new Date();
+
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+
+    // Find matching incomes
+    const levelIncome = await LevelIncome.find({
+      receiver: address,
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+
+    const userIncome = await UserIncome.find({
+      receiver: address,
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+
+    // Sum up rewards
+    const totalLevelIncome = levelIncome.reduce(
+      (sum, item) => sum + Number(item.reward),
+      0
+    );
+
+    const totalUserIncome = userIncome.reduce(
+      (sum, item) => sum + Number(item.amount),
+      0
+    );
+
+    const total = totalLevelIncome + totalUserIncome;
+    
+    return total;
+  } catch (err) {
+    console.error("Error calculating monthly income:", err);
+    throw new Error("Failed to fetch monthly income");
+  }
+}
+
 
 router.put("/updateUserProfile", async (req, res) => {
   try {
@@ -842,15 +925,36 @@ router.get("/getUserProfile", async (req, res) => {
       return res.status(400).json({ error: "Address is required" });
     }
 
-    const data = await Profile.findOne({ address });
-
-    if (!data) {
+    // Fetch profile
+    const profile = await Profile.findOne({ address });
+    if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    res.status(200).json({ message: "Profile fetched successfully", data });
+    // Parallel data fetching for efficiency
+    const [teamSize, todayIncome, monthlyIncome] = await Promise.all([
+      getTeamSize(address),
+      todayTotalIncome(address),
+      monthlyTotalIncome(address)
+    ]);
+
+    // Return all collected data
+    res.status(200).json({
+      message: "Profile fetched successfully",
+      data: {
+        profile,
+        teamSize,
+        todayIncome,
+        monthlyIncome
+      }
+    });
+
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+
+module.exports = router;
