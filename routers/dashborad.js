@@ -14,6 +14,7 @@ const cron = require("node-cron");
 const AsyncLock = require("async-lock");
 const Web3 = require("web3");
 const Profile = require("../model/Profile");
+const reEntry = require("../model/reEntry");
 const lock = new AsyncLock();
 
 const web3 = new Web3(
@@ -409,11 +410,15 @@ router.get("/dashboard", async (req, res) => {
       0
     );
 
+    const directReff = await registration.find({ referrer: address });
+
     // Create enhanced user object
     const userWithIncome = {
       ...user.toObject(), // Convert mongoose document to plain object
       userIncome: totalUserIncome,
       levelIncome: totalLevelIncome,
+      directRefferer : directReff.length,
+      uid: user.uId
     };
 
     res.status(200).json({
@@ -429,6 +434,17 @@ router.get("/dashboard", async (req, res) => {
     });
   }
 });
+
+router.get("/reEntryReport", async(req,res) =>{
+  const {address} = req.query;
+
+  const ReentryData = await reEntry.find({user: address});
+
+  res
+  .status(200)
+  .json({ msg: "Data fetch successful", success: true, ReEntryData: ReentryData });
+
+})
 
 router.get("/Matrix", async (req, res) => {
   const { address } = req.query;
