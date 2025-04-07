@@ -399,7 +399,7 @@ router.get("/dashboard", async (req, res) => {
     // Fetch income records from both collections
     const userIncomeRecords = await UserIncome.find({ receiver: address });
     const levelIncomeRecords = await LevelIncome.find({ receiver: address });
-    const totalWithdraw = await WithdrawalModel.find({receiver: address})
+    const totalWithdraw = await WithdrawalModel.find({user: address})
 
     // Calculate totals
     const totalUserIncome = userIncomeRecords.reduce(
