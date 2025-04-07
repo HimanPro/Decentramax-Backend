@@ -655,7 +655,7 @@ router.get("/getAddressbyRefrralIdd", async (req, res) => {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    const record = await registration.findOne({ userId: userId });
+    const record = await registration.findOne({ uId: userId });
 
     res.status(200).json(record.user);
   } catch (error) {
