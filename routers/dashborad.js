@@ -493,7 +493,6 @@ router.get("/Matrix", async (req, res) => {
         msg: "Data fetch successful",
         success: true,
         user: mergedData,
-        reEntry: reEntryDatas,
       });
   } catch (error) {
     res.status(500).json({
@@ -503,6 +502,8 @@ router.get("/Matrix", async (req, res) => {
     });
   }
 });
+
+
 router.get("/userIncomeByUser", async (req, res) => {
   const { receiver } = req.query;
   try {
