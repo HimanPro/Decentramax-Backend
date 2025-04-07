@@ -852,7 +852,7 @@ router.get("/getUserProfile", async (req, res) => {
         weeklyIncome,
         totalUserIncomes: totalUserIncome,
         totalLevelIncomes:totalLevelIncome,
-        totalWithdraws:totalWithdraw
+        totalWithdraws:totalWeeklyReward
       }
     });
 
