@@ -407,7 +407,12 @@ router.get("/dashboard", async (req, res) => {
       0
     );
     const totalLevelIncome = levelIncomeRecords.reduce(
-      (sum, record) => sum + record.reward,
+      (sum, record) => sum + record.reward, 
+      0
+    );
+
+    const totalWeeklyReward = totalWithdraw.reduce(
+      (sum, record)=> sum + record.weeklyReward,
       0
     );
 
@@ -419,7 +424,7 @@ router.get("/dashboard", async (req, res) => {
       userIncome: totalUserIncome,
       levelIncome: totalLevelIncome,
       directRefferer : directReff.length,
-      totalWithdraw: totalWithdraw,
+      totalWithdraw: totalWeeklyReward,
       uid: user.uId
 
     };
@@ -541,7 +546,36 @@ router.get("/levelIncomeByUser", async (req, res) => {
       .json({ msg: "Error in data fetching", success: false, error: error });
   }
 });
+router.get("/totalWithdraw", async (req, res) => {
+  const { address } = req.query;
+  try {
+    const user = await WithdrawalModel.find({ user: address });
 
+    if (!user) {
+      return res.status(404).json({ msg: "User not found", success: false });
+    }
+
+    const mergedData = await Promise.all(
+      user.map(async (record) => {
+        const userDetails = await registration.findOne({ user: record.user }); // Assuming userId is stored in newuserplace records
+
+        // Step 3: Merge the user details with the newuserplace record
+        return {
+          ...record.toObject(), // Convert Mongoose document to plain JavaScript object
+          userId: userDetails ? userDetails.userId : null, // Add user details to the record
+        };
+      })
+    );
+
+    res
+      .status(200)
+      .json({ msg: "Data fetch successful", success: true, user: mergedData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ msg: "Error in data fetching", success: false, error: error });
+  }
+})
 // async function processWithdrawal(userAddress, hash, amount) {
 //   try {
 //     const lastWithdrawFund = await WithdrawalModel.findOne({
