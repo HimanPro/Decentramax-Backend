@@ -15,6 +15,7 @@ const AsyncLock = require("async-lock");
 const Web3 = require("web3");
 const Profile = require("../model/Profile");
 const reEntry = require("../model/reEntry");
+const MemberIncome = require("../model/MemberIncome");
 const lock = new AsyncLock();
 
 const web3 = new Web3(
@@ -816,6 +817,24 @@ router.get("/getUserProfile", async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    const userIncomeRecords = await UserIncome.find({ receiver: address });
+    const levelIncomeRecords = await LevelIncome.find({ receiver: address });
+    const totalWithdraw = await WithdrawalModel.find({user: address})
+
+    // Calculate totals
+    const totalUserIncome = userIncomeRecords.reduce(
+      (sum, record) => sum + record.amount,
+      0
+    );
+    const totalLevelIncome = levelIncomeRecords.reduce(
+      (sum, record) => sum + record.reward, 
+      0
+    );
+
+    const totalWeeklyReward = totalWithdraw.reduce(
+      (sum, record)=> sum + record.weeklyReward,
+      0
+    );
 
     // Parallel data fetching for efficiency
     const [ todayIncome, weeklyIncome] = await Promise.all([
@@ -830,7 +849,10 @@ router.get("/getUserProfile", async (req, res) => {
         profile,
         user,
         todayIncome,
-        weeklyIncome
+        weeklyIncome,
+        totalUserIncomes: totalUserIncome,
+        totalLevelIncomes:totalLevelIncome,
+        totalWithdraws:totalWithdraw
       }
     });
 
@@ -968,6 +990,10 @@ async function getTeamSize(address) {
     }
 
     if (incomeToAdd > 0) {
+      let data = await MemberIncome.create({
+        user: address,
+        amount: incomeToAdd,
+      })
       let user = await registration.findOne({ user: address });
       if (user) {
         user.memberIncome = (user.memberIncome || 0) + incomeToAdd;
@@ -1006,6 +1032,7 @@ async function cronCall() {
     console.error("Cron job failed:", error);
   }
 }
+// cronCall()
 
 cron.schedule(
   "30 17 * * 0", 

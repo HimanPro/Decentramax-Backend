@@ -6,20 +6,9 @@ const MemberIncomeSchama = new Schema({
     type: String,
     required: true
   },
-  referrer: {
-    type: String,
-    required: true
-  },
-  place: {
+  amount: {
     type: Number,
     required: true
-  },
-  level: {
-    type: Number,
-  },
-  cycle: {
-    type: Number,
-    default : 0
   },
   createdAt: {
     type: Date,
@@ -29,16 +18,14 @@ const MemberIncomeSchama = new Schema({
     type: Date,
     default: Date.now
   },
-  txHash: { type: String, required: true},
-  block: { type: Number, required: true },
-  timestamp: { type: Number, required: true },
+  // timestamp: { type: Number, required: true },
 });
 
-newuserplaceSchema.index(
-  { user: 1, referrer: 1, place: 1, level :1, cycle : 1, txHash: 1 },
+MemberIncomeSchama.index(
+  { user: 1, amount: 1,createdAt: 1},
   { unique: true }
 );
 
-const newuserplace = mongoose.model('NewUserPlace', newuserplaceSchema);
+const MemberIncome = mongoose.model('MemberIncome', MemberIncomeSchama);
 
-module.exports = newuserplace;
+module.exports = MemberIncome;
