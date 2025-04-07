@@ -668,8 +668,18 @@ router.get("/getdetailbyUserId", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+router.get("/weeklySalary", async(req,res)=>{
+  let { address } = req.query;
+  if (!address) {
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
 
+  const data = await MemberIncome.find({ user: address });
 
+  return res.status(200).json({
+    data,
+  });
+})
 async function todayTotalIncome(address) {
   try {
     // Get start and end of today
