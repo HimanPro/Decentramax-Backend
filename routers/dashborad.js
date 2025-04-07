@@ -546,7 +546,7 @@ router.get("/levelIncomeByUser", async (req, res) => {
       .json({ msg: "Error in data fetching", success: false, error: error });
   }
 });
-router.get("/totalWithdraw", async (req, res) => {
+router.get("/withdrawReport", async (req, res) => {
   const { address } = req.query;
   try {
     const user = await WithdrawalModel.find({ user: address });
@@ -1046,6 +1046,8 @@ router.get("/getUserProfile", async (req, res) => {
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
+
+    // const 
 
     // Parallel data fetching for efficiency
     const [ todayIncome, weeklyIncome] = await Promise.all([

@@ -468,7 +468,7 @@ async function processEvents(events) {
           let userId = "";
           const randomNumber = Math.floor(Math.random() * 100000);
           const fiveDigitNumber = randomNumber.toString().padStart(5, "0");
-          userId = "DCNTRA" + fiveDigitNumber;
+          userId = "DCT" + fiveDigitNumber;
           try {
             let isCreated = await registration.create({
               userId: userId,
