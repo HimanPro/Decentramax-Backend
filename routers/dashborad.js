@@ -16,6 +16,7 @@ const Web3 = require("web3");
 const Profile = require("../model/Profile");
 const reEntry = require("../model/reEntry");
 const MemberIncome = require("../model/MemberIncome");
+// const reEntry = require("../model/reEntry");
 const lock = new AsyncLock();
 
 const web3 = new Web3(
@@ -400,7 +401,7 @@ router.get("/dashboard", async (req, res) => {
     // Fetch income records from both collections
     const userIncomeRecords = await UserIncome.find({ receiver: address });
     const levelIncomeRecords = await LevelIncome.find({ receiver: address });
-    const totalWithdraw = await WithdrawalModel.find({user: address})
+    const totalWithdraw = await WithdrawalModel.find({ user: address });
 
     // Calculate totals
     const totalUserIncome = userIncomeRecords.reduce(
@@ -408,12 +409,12 @@ router.get("/dashboard", async (req, res) => {
       0
     );
     const totalLevelIncome = levelIncomeRecords.reduce(
-      (sum, record) => sum + record.reward, 
+      (sum, record) => sum + record.reward,
       0
     );
 
     const totalWeeklyReward = totalWithdraw.reduce(
-      (sum, record)=> sum + record.weeklyReward,
+      (sum, record) => sum + record.weeklyReward,
       0
     );
 
@@ -424,10 +425,9 @@ router.get("/dashboard", async (req, res) => {
       ...user.toObject(), // Convert mongoose document to plain object
       userIncome: totalUserIncome,
       levelIncome: totalLevelIncome,
-      directRefferer : directReff.length,
-      totalWithdraw: totalWeeklyReward/1e18,
-      uid: user.uId
-
+      directRefferer: directReff.length,
+      totalWithdraw: totalWeeklyReward / 1e18,
+      uid: user.uId,
     };
 
     res.status(200).json({
@@ -444,21 +444,34 @@ router.get("/dashboard", async (req, res) => {
   }
 });
 
-router.get("/reEntryReport", async(req,res) =>{
-  const {address} = req.query;
+router.get("/reEntryReport", async (req, res) => {
+  const { address } = req.query;
 
-  const ReentryData = await reEntry.find({user: address});
+  const ReentryData = await reEntry.find({ user: address });
 
   res
-  .status(200)
-  .json({ msg: "Data fetch successful", success: true, ReEntryData: ReentryData });
-
-})
+    .status(200)
+    .json({
+      msg: "Data fetch successful",
+      success: true,
+      ReEntryData: ReentryData,
+    });
+});
 
 router.get("/Matrix", async (req, res) => {
-  const { address } = req.query;
+  const { address, cycle } = req.query;
+  let currentCycle = 0;
+  const CheckReEntry = await reEntry.countDocuments({ user: address });
+  if (cycle) {
+    currentCycle = cycle;
+  } else {
+    currentCycle = CheckReEntry;
+  }
   try {
-    const user = await newuserplace.find({ referrer: address });
+    const user = await newuserplace.find({
+      referrer: address,
+      cycle: currentCycle,
+    });
 
     if (!user) {
       return res.status(404).json({ msg: "User not found", success: false });
@@ -466,19 +479,22 @@ router.get("/Matrix", async (req, res) => {
 
     const mergedData = await Promise.all(
       user.map(async (record) => {
-        const userDetails = await registration.findOne({ user: record.user }); // Assuming userId is stored in newuserplace records
-
-        // Step 3: Merge the user details with the newuserplace record
+        const userDetails = await registration.findOne({ user: record.user });
         return {
-          ...record.toObject(), // Convert Mongoose document to plain JavaScript object
-          userId: userDetails ? userDetails.userId : null, // Add user details to the record
+          ...record.toObject(),
+          userId: userDetails ? userDetails.userId : null,
         };
       })
     );
 
     res
       .status(200)
-      .json({ msg: "Data fetch successful", success: true, user: mergedData });
+      .json({
+        msg: "Data fetch successful",
+        success: true,
+        user: mergedData,
+        reEntry: reEntryDatas,
+      });
   } catch (error) {
     res.status(500).json({
       msg: "Error in data fetching",
@@ -576,7 +592,7 @@ router.get("/withdrawReport", async (req, res) => {
       .status(500)
       .json({ msg: "Error in data fetching", success: false, error: error });
   }
-})
+});
 router.get("/directReferrer", async (req, res) => {
   let { address } = req.query;
   if (!address) {
@@ -590,52 +606,47 @@ router.get("/directReferrer", async (req, res) => {
   });
 });
 
-router.get("/getTeam", async (req, res)=>{
+router.get("/getTeam", async (req, res) => {
+  const { address } = req.query;
 
-    const {address} = req.query
-    
-      try {
-        const userData = await registration
-          .aggregate([
-            { $match: { user: address } },
-            {
-              $graphLookup: {
-                from: "Registration",
-                startWith: "$user",
-                connectFromField: "user",
-                connectToField: "referrer",
-                as: "team",
-                maxDepth: 5,
-                depthField: "level",
-              },
-            },
-            { $unwind: "$team" },
-            {
-              $project: {
-                _id: 0,
-                userId: "$team.userId",
-                user: "$team.user",
-                referrer: "$team.referrer",
-                referrerId: "$team.referrerId",
-                timestamp: "$team.timestamp",
-                createdAt: "$team.createdAt",
-              },
-            },
-          ])
-          .sort({ createdAt: 1 });
-    
-        const teamSize = userData.length;
-        console.log(`Team size for ${address}: ${teamSize}`);
+  try {
+    const userData = await registration
+      .aggregate([
+        { $match: { user: address } },
+        {
+          $graphLookup: {
+            from: "Registration",
+            startWith: "$user",
+            connectFromField: "user",
+            connectToField: "referrer",
+            as: "team",
+            maxDepth: 5,
+            depthField: "level",
+          },
+        },
+        { $unwind: "$team" },
+        {
+          $project: {
+            _id: 0,
+            userId: "$team.userId",
+            user: "$team.user",
+            referrer: "$team.referrer",
+            referrerId: "$team.referrerId",
+            timestamp: "$team.timestamp",
+            createdAt: "$team.createdAt",
+          },
+        },
+      ])
+      .sort({ createdAt: 1 });
 
+    const teamSize = userData.length;
+    console.log(`Team size for ${address}: ${teamSize}`);
 
-            res.json(userData)
-       
-        
-      } catch (error) {
-        console.error(`Error fetching team size for ${address}:`, error);
-      }
-    
-})
+    res.json(userData);
+  } catch (error) {
+    console.error(`Error fetching team size for ${address}:`, error);
+  }
+});
 router.get("/getAddressbyRefrralIdd", async (req, res) => {
   try {
     const { userId } = req.query;
@@ -668,7 +679,7 @@ router.get("/getdetailbyUserId", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-router.get("/weeklySalary", async(req,res)=>{
+router.get("/weeklySalary", async (req, res) => {
   let { address } = req.query;
   if (!address) {
     return res.status(400).json({ success: false, message: "Invalid input" });
@@ -679,7 +690,7 @@ router.get("/weeklySalary", async(req,res)=>{
   return res.status(200).json({
     data,
   });
-})
+});
 async function todayTotalIncome(address) {
   try {
     // Get start and end of today
@@ -717,7 +728,7 @@ async function todayTotalIncome(address) {
     );
 
     const total = totalLevelIncome + totalUserIncome;
-   
+
     return total;
   } catch (err) {
     console.error("Error calculating today's income:", err);
@@ -733,19 +744,29 @@ async function weeklyTotalIncome(address) {
     const day = now.getUTCDay();
 
     // Calculate start and end of current week (Sunday to Saturday)
-    const startOfWeek = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() - day,
-      0, 0, 0, 0
-    ));
+    const startOfWeek = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - day,
+        0,
+        0,
+        0,
+        0
+      )
+    );
 
-    const endOfWeek = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() + (6 - day),
-      23, 59, 59, 999
-    ));
+    const endOfWeek = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + (6 - day),
+        23,
+        59,
+        59,
+        999
+      )
+    );
 
     // Find matching incomes
     const levelIncome = await LevelIncome.find({
@@ -777,8 +798,6 @@ async function weeklyTotalIncome(address) {
     throw new Error("Failed to fetch weekly income");
   }
 }
-
-
 
 router.put("/updateUserProfile", async (req, res) => {
   try {
@@ -818,18 +837,18 @@ router.get("/getUserProfile", async (req, res) => {
 
     // Fetch profile
     const profile = await Profile.findOne({ address });
-    
+
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    const user = await registration.findOne({user: address})
+    const user = await registration.findOne({ user: address });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     const userIncomeRecords = await UserIncome.find({ receiver: address });
     const levelIncomeRecords = await LevelIncome.find({ receiver: address });
-    const totalWithdraw = await WithdrawalModel.find({user: address})
+    const totalWithdraw = await WithdrawalModel.find({ user: address });
 
     // Calculate totals
     const totalUserIncome = userIncomeRecords.reduce(
@@ -837,19 +856,19 @@ router.get("/getUserProfile", async (req, res) => {
       0
     );
     const totalLevelIncome = levelIncomeRecords.reduce(
-      (sum, record) => sum + record.reward, 
+      (sum, record) => sum + record.reward,
       0
     );
 
     const totalWeeklyReward = totalWithdraw.reduce(
-      (sum, record)=> sum + record.weeklyReward,
+      (sum, record) => sum + record.weeklyReward,
       0
     );
 
     // Parallel data fetching for efficiency
-    const [ todayIncome, weeklyIncome] = await Promise.all([
+    const [todayIncome, weeklyIncome] = await Promise.all([
       todayTotalIncome(address),
-      weeklyTotalIncome(address)
+      weeklyTotalIncome(address),
     ]);
 
     // Return all collected data
@@ -861,11 +880,10 @@ router.get("/getUserProfile", async (req, res) => {
         todayIncome,
         weeklyIncome,
         totalUserIncomes: totalUserIncome,
-        totalLevelIncomes:totalLevelIncome,
-        totalWithdraws:totalWeeklyReward
-      }
+        totalLevelIncomes: totalLevelIncome,
+        totalWithdraws: totalWeeklyReward,
+      },
     });
-
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -947,7 +965,6 @@ function parseSignature(signature) {
   return { v, r, s };
 }
 async function getTeamSize(address) {
-
   if (!address) {
     console.error("Invalid address provided.");
     return;
@@ -1003,7 +1020,7 @@ async function getTeamSize(address) {
       let data = await MemberIncome.create({
         user: address,
         amount: incomeToAdd,
-      })
+      });
       let user = await registration.findOne({ user: address });
       if (user) {
         user.memberIncome = (user.memberIncome || 0) + incomeToAdd;
@@ -1045,15 +1062,15 @@ async function cronCall() {
 // cronCall()
 
 cron.schedule(
-  "30 17 * * 0", 
+  "30 17 * * 0",
   async () => {
-    cronCall()
- },
+    cronCall();
+  },
   {
-   scheduled: true,
+    scheduled: true,
     timezone: "Asia/Kolkata", // Set the timezone to Asia/Kolkata for IST
   }
- );
+);
 router.get("/withdrawMemberIncome", async (req, res) => {
   const { address } = req.query;
 
@@ -1102,10 +1119,8 @@ router.get("/withdrawMemberIncome", async (req, res) => {
         .call();
 
       // console.log(randomHash,"xx")
-     
-      const vrsSign = await processWithdrawal(address, randomHash, amount);
 
-    
+      const vrsSign = await processWithdrawal(address, randomHash, amount);
 
       return res.status(200).json({
         success: true,
@@ -1127,6 +1142,5 @@ router.get("/withdrawMemberIncome", async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
