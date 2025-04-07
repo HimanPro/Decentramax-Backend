@@ -1043,11 +1043,15 @@ router.get("/getUserProfile", async (req, res) => {
 
     // Fetch profile
     const profile = await Profile.findOne({ address });
+    
     if (!profile) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    // const 
+    const user = await registration.findOne({user: address})
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     // Parallel data fetching for efficiency
     const [ todayIncome, weeklyIncome] = await Promise.all([
@@ -1060,6 +1064,7 @@ router.get("/getUserProfile", async (req, res) => {
       message: "Profile fetched successfully",
       data: {
         profile,
+        user,
         todayIncome,
         weeklyIncome
       }
