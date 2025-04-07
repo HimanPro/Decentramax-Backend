@@ -424,7 +424,7 @@ router.get("/dashboard", async (req, res) => {
       userIncome: totalUserIncome,
       levelIncome: totalLevelIncome,
       directRefferer : directReff.length,
-      totalWithdraw: totalWeeklyReward,
+      totalWithdraw: totalWeeklyReward/1e18,
       uid: user.uId
 
     };
