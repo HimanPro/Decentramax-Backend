@@ -604,6 +604,14 @@ async function processEvents(events) {
           block: blockNumber,
           timestamp: timestamp,
         });
+
+            if(iswit){
+          const amt = returnValues.weeklyReward / 1e18;
+          await registration.updateOne(
+            { user: returnValues.user },
+            { $inc: { memberIncome: -amt } }
+          );
+        }
       } catch (e) {
         console.log("Error (withdraw Event) :", e.message);
       }
