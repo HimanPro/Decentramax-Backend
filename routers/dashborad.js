@@ -459,26 +459,26 @@ router.get("/reEntryReport", async (req, res) => {
 });
 
 router.get("/Matrix", async (req, res) => {
-  const { address, cycle } = req.query;
-  let currentCycle = 0;
-  const CheckReEntry = await reEntry.countDocuments({ user: address });
-  if (cycle) {
-    currentCycle = cycle;
-  } else {
-    currentCycle = CheckReEntry;
-  }
   try {
-    const user = await newuserplace.find({
+    const { address, cycle } = req.query;
+
+    if (!address) {
+      return res.status(400).json({ msg: "Address is required", success: false });
+    }
+
+    let currentCycle = cycle ? Number(cycle) : await reEntry.countDocuments({ user: address });
+
+    const userRecords = await newuserplace.find({
       referrer: address,
       cycle: currentCycle,
     });
 
-    if (!user) {
-      return res.status(404).json({ msg: "User not found", success: false });
+    if (!userRecords || userRecords.length === 0) {
+      return res.status(404).json({ msg: "No users found", success: false });
     }
 
     const mergedData = await Promise.all(
-      user.map(async (record) => {
+      userRecords.map(async (record) => {
         const userDetails = await registration.findOne({ user: record.user });
         return {
           ...record.toObject(),
@@ -487,13 +487,12 @@ router.get("/Matrix", async (req, res) => {
       })
     );
 
-    res
-      .status(200)
-      .json({
-        msg: "Data fetch successful",
-        success: true,
-        user: mergedData,
-      });
+    res.status(200).json({
+      msg: "Data fetch successful",
+      success: true,
+      user: mergedData,
+      cycle: currentCycle,
+    });
   } catch (error) {
     res.status(500).json({
       msg: "Error in data fetching",
@@ -502,6 +501,7 @@ router.get("/Matrix", async (req, res) => {
     });
   }
 });
+
 
 
 router.get("/userIncomeByUser", async (req, res) => {
