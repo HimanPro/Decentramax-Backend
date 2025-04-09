@@ -27,7 +27,7 @@ const withdrawalSchema = new Schema({
     default: Date.now
   }
 });
-WithdrawalModel.index(
+withdrawalSchema.index(
   { user: 1, weeklyReward: 1, nonce: 1, txHash: 1 },
   { unique: true }
 );
