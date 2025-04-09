@@ -455,7 +455,6 @@ router.get("/reEntryReport", async (req, res) => {
     ReEntryData: ReentryData,
   });
 });
-
 router.get("/Matrix", async (req, res) => {
   try {
     const { address, cycle } = req.query;
@@ -499,7 +498,6 @@ router.get("/Matrix", async (req, res) => {
     });
   }
 });
-
 router.get("/userIncomeByUser", async (req, res) => {
   const { receiver } = req.query;
   try {
@@ -732,7 +730,6 @@ async function todayTotalIncome(address) {
     throw new Error("Failed to fetch today's income");
   }
 }
-
 async function weeklyTotalIncome(address) {
   try {
     const now = new Date();
