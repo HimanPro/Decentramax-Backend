@@ -908,7 +908,7 @@ async function processWithdrawal(userAddress, hash, amount) {
       currNonce,
       "currNonce:::,",
       prevNonce,
-      "currNonce:::111,",
+      "prevNonce:::,",
       Number(currNonce)
     );
     if (prevNonce + 1 !== Number(currNonce)) {
@@ -1060,7 +1060,6 @@ async function cronCall() {
     console.error("Cron job failed:", error);
   }
 }
-// cronCall()
 
 cron.schedule(
   "0 11 * * *",

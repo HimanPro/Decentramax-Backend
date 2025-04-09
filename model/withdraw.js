@@ -27,6 +27,10 @@ const withdrawalSchema = new Schema({
     default: Date.now
   }
 });
+WithdrawalModel.index(
+  { user: 1, weeklyReward: 1, nonce: 1, txHash: 1 },
+  { unique: true }
+);
 
 const WithdrawalModel = mongoose.model('Withdraw', withdrawalSchema);
 
