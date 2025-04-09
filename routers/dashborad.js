@@ -488,7 +488,7 @@ router.get("/Matrix", async (req, res) => {
         };
       })
     );
-console.log(currentCycle.toExponential, ":::123")
+// console.log(currentCycle.toExponential, ":::123")
     res.status(200).json({
       msg: "Data fetch successful",
       success: true,
