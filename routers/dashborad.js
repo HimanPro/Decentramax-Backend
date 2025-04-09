@@ -474,7 +474,7 @@ router.get("/Matrix", async (req, res) => {
     });
 
     if (!userRecords || userRecords.length === 0) {
-      return res.status(200).json({ msg: "No users found", success: false });
+      return res.status(200).json({ msg: "No users found", success: false , cycle: currentCycle});
     }
 
     const mergedData = await Promise.all(
@@ -486,7 +486,7 @@ router.get("/Matrix", async (req, res) => {
         };
       })
     );
-
+console.log(currentCycle.toExponential, ":::123")
     res.status(200).json({
       msg: "Data fetch successful",
       success: true,
