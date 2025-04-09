@@ -474,7 +474,7 @@ router.get("/Matrix", async (req, res) => {
     });
 
     if (!userRecords || userRecords.length === 0) {
-      return res.status(404).json({ msg: "No users found", success: false });
+      return res.status(200).json({ msg: "No users found", success: false });
     }
 
     const mergedData = await Promise.all(
