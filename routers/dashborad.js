@@ -1062,7 +1062,7 @@ async function cronCall() {
 }
 
 cron.schedule(
-  "0 11 * * *",
+  "30 17 * * 0",
   async () => {
     cronCall();
   },
