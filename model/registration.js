@@ -59,7 +59,7 @@ const registration = new mongoose.Schema(
 );
 
 registration.index(
-  { user: 1,uId:1,rId:1, referrer: 1, txHash: 1 },
+  { user: 1, txHash: 1 },
   { unique: true }
 );
 
