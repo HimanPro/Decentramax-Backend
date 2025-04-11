@@ -384,6 +384,7 @@ const ABI = [
     type: "function",
   },
 ];
+
 const contract = new web3.eth.Contract(ABI, process.env.MAIN_CONTRACT);
 
 router.get("/dashboard", async (req, res) => {
