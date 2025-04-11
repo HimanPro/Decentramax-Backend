@@ -4,11 +4,11 @@ const registration = new mongoose.Schema(
     userId: {
       type: String,
       required: true,
-      index: { unique: true },
+  
     },
     uId: { type: Number, required: true },
     rId: { type: Number, required: true },
-    user: { type: String, required: true, unique: true },
+    user: { type: String, required: true },
     referrerId: { type: String, required: true,trim:true },
     referrer: { type: String, required: true },
     memberIncome: { type: Number, default: 0},
@@ -48,7 +48,7 @@ const registration = new mongoose.Schema(
     // wallet_rewards: {type: Number, default : 0},
     // wallet_lapse: {type: Number, default : 0},
     // withdraw_status:{type: Number, default : 0},
-    txHash: { type: String, required: true, unique: true },
+    txHash: { type: String, required: true },
     block: { type: Number, required: true },
     timestamp: { type: Number, required: true },
     // cal_status:{type:Number,default:0},
