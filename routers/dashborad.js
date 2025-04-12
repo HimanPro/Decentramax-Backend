@@ -16,6 +16,7 @@ const Web3 = require("web3");
 const Profile = require("../model/Profile");
 const reEntry = require("../model/reEntry");
 const MemberIncome = require("../model/MemberIncome");
+const admin_login = require("../model/admin_login");
 // const reEntry = require("../model/reEntry");
 const lock = new AsyncLock();
 
@@ -1134,6 +1135,106 @@ router.get("/withdrawMemberIncome", async (req, res) => {
       success: false,
       message: "Server error. Please try again later.",
     });
+  }
+});
+
+
+
+// Admin Api
+
+
+router.get("/adminlogin", async (req, res) => {
+  const { email, password } = req.query;
+
+  const user = await admin_login.findOne({ email, password });
+
+  if (!user) {
+    return res.status(401).json({ message: "Invalid email or password" });
+  }
+
+  res.json({ message: "Login successful", user });
+});
+
+
+router.get("/getAllUser", async (req, res) => {
+  try {
+    // const token = req.headers['x-api-key'];
+    // if (token !== 'mySecretKey123') {
+    //   return res.status(403).json({ message: "Unauthorized" });
+    // }
+
+    const users = await registration.find({}, { password: 0, __v: 0 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
+router.get("/UserLavelIncome", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    let data;
+    if (address) {
+      data = await LevelIncome.find({receiver: address });
+    } else {
+      data = await LevelIncome.find();
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.get("/UserUserIncome", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    let data;
+    if (address) {
+      data = await UserIncome.find({receiver: address });
+    } else {
+      data = await UserIncome.find();
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.get("/UserReEntry", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    let data;
+    if (address) {
+      data = await reEntry.find({user: address });
+    } else {
+      data = await reEntry.find();
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+router.get("/UserWithdraw", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    let data;
+    if (address) {
+      data = await WithdrawalModel.find({user: address });
+    } else {
+      data = await WithdrawalModel.find();
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 

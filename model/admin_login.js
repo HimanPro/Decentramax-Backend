@@ -1,20 +1,14 @@
 const mongoose = require("mongoose");
 
-const admin = new mongoose.Schema(
+const AdminCredSchema = new mongoose.Schema(
   {
-    email: { type: String, trim: true, required: true },
-    password: { type: String, required: true },
-    status: {
-      type: Number,
-      default: 0,
-    },
-     secret :{
-      type: String,
-      default:''
-    }
+    email: { type: String, default: 'admin@decentramax.com' },
+    password: { type: String, default: 'admin@1987' },
   },
- 
-  { timestamps: true, collection: "admin_login" }
+  {
+    timestamps: true,
+    collection: "AdminCred", // Explicit collection name
+  }
 );
 
-// module.exports = mongoose.model("admin_login", admin);
+module.exports = mongoose.model("AdminCred", AdminCredSchema);
