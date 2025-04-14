@@ -1144,15 +1144,14 @@ router.get("/withdrawMemberIncome", async (req, res) => {
 
 
 router.get("/adminlogin", async (req, res) => {
-  const { email, password } = req.query;
-
-  const user = await admin_login.findOne({ email, password });
-
-  if (!user) {
-    return res.status(401).json({ message: "Invalid email or password" });
+  try {
+    const { email, password } = req.query;
+    const data = await admin_login.findOne({ email, password });
+    res.json(data);
+  } catch (error) {
+    console.error("Error during admin login:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-
-  res.json({ message: "Login successful", user });
 });
 
 
