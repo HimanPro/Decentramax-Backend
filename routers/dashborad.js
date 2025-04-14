@@ -1236,5 +1236,21 @@ router.get("/UserWithdraw", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+router.get("/UserWithdrawss", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    let data;
+    if (address) {
+      data = await WithdrawalModel.find({user: address });
+    } else {
+      data = await WithdrawalModel.find();
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
 
 module.exports = router;

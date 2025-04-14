@@ -1,31 +1,35 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const MemberIncomeSchama = new Schema({
-    user: {
+  user: {
     type: String,
-    required: true
+    required: true,
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
+  },
+  status: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   // timestamp: { type: Number, required: true },
 });
 
 MemberIncomeSchama.index(
-  { user: 1, amount: 1,createdAt: 1},
+  { user: 1, amount: 1, createdAt: 1 },
   { unique: true }
 );
 
-const MemberIncome = mongoose.model('MemberIncome', MemberIncomeSchama);
+const MemberIncome = mongoose.model("MemberIncome", MemberIncomeSchama);
 
 module.exports = MemberIncome;
