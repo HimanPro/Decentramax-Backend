@@ -1226,9 +1226,9 @@ router.get("/UserWithdraw", async (req, res) => {
 
     let data;
     if (address) {
-      data = await WithdrawalModel.find({user: address });
+      data = await MemberIncome.find({user: address });
     } else {
-      data = await WithdrawalModel.find();
+      data = await MemberIncome.find();
     }
 
     res.json(data);
