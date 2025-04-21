@@ -29,6 +29,7 @@ const newuserplace3 = require("./model/newuserplace3");
 const SponsorIncome = require("./model/sponsorincome");
 const LevelIncome = require("./model/LevelIncome");
 const WithdrawalModel = require("./model/withdraw");
+const MemberIncome = require("./model/MemberIncome");
 
 app.use(express.json());
 
@@ -594,7 +595,7 @@ async function processEvents(events) {
       } catch (e) {
         console.log("Error (SponserReward Event) :", e.message);
       }
-    } else if (event == "Withdrawl") {
+    }else if (event == "Withdrawl") {
       try {
         const iswit = await WithdrawalModel.create({
           user: returnValues.user,
@@ -603,12 +604,27 @@ async function processEvents(events) {
           block: blockNumber,
           timestamp: timestamp,
         });
-
-            if(iswit){
+    
+        if (iswit) {
           const amt = returnValues.weeklyReward / 1e18;
+          
+          
+          // First update the registration to deduct the amount
           await registration.updateOne(
             { user: returnValues.user },
             { $inc: { memberIncome: -amt } }
+          );
+          
+          // Then update the MemberIncome records for this user
+          // Find all MemberIncome records for this user with matching amount and status false
+          // and update their status to true
+          await MemberIncome.updateMany(
+            { 
+              user: returnValues.user,
+              amount: amt,
+              status: false
+            },
+            { $set: { status: true, updatedAt: new Date() } }
           );
         }
       } catch (e) {
