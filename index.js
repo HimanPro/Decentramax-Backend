@@ -594,12 +594,11 @@ async function processEvents(events) {
       } catch (e) {
         console.log("Error (SponserReward Event) :", e.message);
       }
-    } else if (event == "Withdraw") {
+    } else if (event == "Withdrawl") {
       try {
         const iswit = await WithdrawalModel.create({
           user: returnValues.user,
           weeklyReward: returnValues.weeklyReward,
-          nonce: returnValues.nonce,
           txHash: transactionHash,
           block: blockNumber,
           timestamp: timestamp,

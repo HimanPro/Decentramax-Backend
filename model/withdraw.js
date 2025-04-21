@@ -10,10 +10,6 @@ const withdrawalSchema = new Schema({
     type: Number,
     required: true
   },
-  nonce: {
-    type: Number,
-    required: true
-  },
   txHash : {
     type: String,
     default : null
