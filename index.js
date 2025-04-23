@@ -893,8 +893,8 @@ async function processEvents(events) {
           // Then update the MemberIncome records for this user
           // Find all MemberIncome records for this user with matching amount and status false
           // and update their status to true
-          await MemberIncome.updateMany(
-            { 
+          await MemberIncome.updateOne(
+            {
               user: returnValues.user,
               amount: amt,
               status: false
